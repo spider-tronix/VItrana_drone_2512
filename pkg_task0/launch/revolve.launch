@@ -1,0 +1,18 @@
+<launch>
+
+	<node pkg="turtlesim" type="turtlesim_node" name="turtlesim_task0" output="screen"/>
+
+	<node pkg="pkg_task0" type="node_turtle_revolve.py" name="revolve" output="screen" />
+
+	<arg name="record" default="false"/>
+	<arg name="duration" default="10"/>
+	<arg name="rec_name" default="turtle_record.bag"/>
+
+	<group>
+
+	    <node name="rosbag_record_turtle" pkg="rosbag" type="record"
+	       args="record -O $(find pkg_task0)/bag_files/my_turtle.bag --duration=$(arg duration) --chunksize=10 /turtle1/cmd_vel /turtle1/pose" output="screen"/>
+
+	</group>
+
+</launch>
