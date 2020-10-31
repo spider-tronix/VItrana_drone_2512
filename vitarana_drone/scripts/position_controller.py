@@ -16,6 +16,7 @@ class Edrone():
         self.gps_value = [19.0, 72.0, 0.31]
         self.setpoint_gps_value = [19.0, 72.0, 0.31]
 
+
         self.checkpoint_1 =0
         self.checkpoint_2 =0
 
@@ -108,8 +109,7 @@ class Edrone():
         self.command_value.rcRoll = 1500 + self.output_latitude  
 
         self.command_value.rcPitch = 1500 + self.output_longitude
-        
-        
+     
 
         self.cmd_pub.publish(self.command_value)             
         
