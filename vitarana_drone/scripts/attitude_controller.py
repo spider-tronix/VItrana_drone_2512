@@ -190,6 +190,29 @@ class Edrone():
         self.error[1] = self.setpoint_euler[1] - self.drone_orientation_euler_deg[1]
         self.error[2] = self.setpoint_euler[2] - self.drone_orientation_euler_deg[2]
 
+        if(self.error[0] > 1):
+            self.error[0] = 1
+
+        if(self.error[1] > 1):
+            self.error[1] = 1
+
+        if(self.error[2] > 1):
+            self.error[2] = 1
+
+
+        if(self.error[0] < -1):
+            self.error[0] = -1
+
+        if(self.error[1] < -1):
+            self.error[1] = -1
+
+        if(self.error[2] < -1):
+            self.error[2] = -1
+
+        print self.error
+
+
+
         
         # Compute change in error (for derivative) in each axis
         self.errorD[0] = self.error[0] - self.prev_errors[0]

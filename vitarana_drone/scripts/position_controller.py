@@ -47,7 +47,7 @@ class Edrone():
 
          # initial setting of Kp, Kd and ki for [latitude, longitude, altitude]
         # after tuning and computing corresponding PID parameters
-        self.Kp = [4,4,10.2]
+        self.Kp = [5,5,10.2]
         self.Ki = [0, 0, 0]
         self.Kd = [1600,1600, 600]
 
@@ -64,7 +64,10 @@ class Edrone():
 
 
         self.following_wall =0
-        self.moving_forward =0 
+        self.moving_forward =0
+        self.moving_left = 0  
+        self.moving_right =0
+        self.intact_to_wall = 0
 
 
         # Subscribe to /edrone/gps
@@ -145,53 +148,42 @@ class Edrone():
         
 
         if(self.following_wall == 0):
-            self.setpoint_position = [20,10,27.16]
-            self.error[0] = (self.setpoint_position[0] - self.current_position[0])
-            self.error[1] = (self.setpoint_position[1] - self.current_position[1])
-            self.error[2] = (self.setpoint_position[2] - self.current_position[2])
-            
-
-
-        
-
-        
-                  
-        
-
-       
-            
+            self.setpoint_position = [20,10,27.16]            
         
         # Computing errors(for proportional) for latitide, longitude and altitude
        
 
-        print self.following_wall
-        print self.moving_forward
+        
 
 
         if(self.error[0]<0 or self.following_wall==1):
             
-            if(self.obstacle_left < 6 and self.current_position[2]>24 and self.moving_forward == 0):
-                self.error[0] = 6 - self.obstacle_left
-                self.error[1] = -2
+            if(self.obstacle_left < 10 and self.current_position[2]>24 and self.moving_forward == 0 ):
+                self.setpoint_position[0] = 6 - self.obstacle_left + self.current_position[0]
+                self.setpoint_position[1] = -3 + self.current_position[1]
                 self.following_wall = 1
+                self.moving_left  = 1
                 
+            if(self.obstacle_left== float('inf') and self.following_wall==1 and self.moving_forward==0):
+                self.moving_left = 0
+                self.moving_forward = 1
+                self.setpoint_position[1] = self.current_position[1] - 2
+                self.setpoint_position[0] = -2 
+
+            if(self.moving_forward==1 and self.obstacle_front< 10 and self.obstacle_front > 0.5):
+                self.intact_to_wall = 1
+
+
+            if(self.obstacle_front == float('inf') and self.following_wall==1 and self.moving_forward==1 and self.moving_left==0 and self.intact_to_wall==1):
+                self.moving_forward = 0
+                self.moving_right = 1
+                self.setpoint_position[0] = self.current_position[0] - 2
+                self.setpoint_position[1] = -2 + self.current_position[1]       
                 
 
-            if(self.obstacle_left == float('inf') and self.following_wall==1):
-                self.moving_forward = 1 
             
-            if(self.moving_forward ==1):           
-                    self.error[1] = -2 
-                    self.error[0] = -3
-                    if(self.obstacle_front < 6 and self.obstacle_front != float('inf')):
-                        self.error[1] = self.obstacle_front - 5
-                        print "it is coming Here"
-                
 
-                
-
-        print self.error     
-
+        print self.obstacle_front
 
 
 
@@ -199,8 +191,10 @@ class Edrone():
         self.lat_error_pub.publish(self.error[0])
 
 
-
-
+       
+        self.error[0] = (self.setpoint_position[0] - self.current_position[0])
+        self.error[1] = (self.setpoint_position[1] - self.current_position[1])
+        self.error[2] = (self.setpoint_position[2] - self.current_position[2])
 
 
         # Compute sum of errors (for integral) for latitide, longitude and altitude
@@ -242,7 +236,7 @@ if __name__ == '__main__':
     r = rospy.Rate(16)  # specify rate in Hz based upon your desired PID sampling time
     while not rospy.is_shutdown():      # run pid() until rospy is shutdown
         try:
-         print "hello"
+         
          e_drone.pid()                 # execute pid equation
          r.sleep()
         except rospy.exceptions.ROSTimeMovedBackwardsException: pass    #return error is anything goees wwrong
