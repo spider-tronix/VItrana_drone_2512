@@ -12,7 +12,6 @@ import rospy
 import time
 import tf
 import math
-import numpy as np
 
 class Edrone():
     """docstring for Edrone"""
@@ -50,9 +49,9 @@ class Edrone():
 
          # initial setting of Kp, Kd and ki for [latitude, longitude, altitude]
         # after tuning and computing corresponding PID parameters
-        self.Kp = [36,36,60]
+        self.Kp = [10,10,15.2]
         self.Ki = [0, 0, 0]
-        self.Kd = [2300,2300,1300]
+        self.Kd = [1800,1800, 1000]
 
         self.obstacle_right = float('inf')
         self.obstacle_left = float('inf')
@@ -65,8 +64,6 @@ class Edrone():
         # publish /drone_command and /lat_error
         self.cmd_pub = rospy.Publisher('/drone_command', edrone_cmd, queue_size=16)
         self.lat_error_pub = rospy.Publisher('/lat_error',Float32,queue_size = 1)
-        self.long_error_pub = rospy.Publisher('/long_error',Float32,queue_size = 1)
-        self.alt_error_pub = rospy.Publisher('/alt_error',Float32,queue_size = 1)
 
 
         self.following_wall =0
@@ -83,7 +80,6 @@ class Edrone():
         self.multiplier = 6
         self.final_setpoint_position = [0,0,0]
         self.prev_lower_setpoint = 25
-        self.way_count = 0
 
 
         # Subscribe to /edrone/gps
@@ -94,10 +90,7 @@ class Edrone():
         rospy.Subscriber('/final_coordinates_x',Float32,self.x_callback)
         rospy.Subscriber('/final_coordinates_y',Float32,self.y_callback)
         rospy.Subscriber('/final_coordinates_z',Float32,self.z_callback)
-        rospy.Subscriber('/pid_tuning_roll',PidTune , self.set_lat_pid)
-        rospy.Subscriber('/pid_tuning_pitch',PidTune , self.set_long_pid)
-        rospy.Subscriber('/pid_tuning_yaw',PidTune , self.set_alt_pid)
-
+        #rospy.Subscriber('/pid_tuning_roll',PidTune , self.set_roll_pid)
 
 
     #callbacks for getting location through QR code
@@ -136,20 +129,10 @@ class Edrone():
        # -----------------------------------------------call back function -------------------------------------------------------
     
     
-    def set_lat_pid(self,roll):
-        self.Kp[0] = roll.Kp*0.06
-        self.Ki[0] = roll.Ki*0.00008
-        self.Kd[0] = roll.Kd
-
-    def set_long_pid(self,pitch):
-        self.Kp[1] = pitch.Kp*0.06
-        self.Ki[1] = pitch.Ki*0.00008
-        self.Kd[1] = pitch.Kd
-
-    def set_alt_pid(self,yaw):
-        self.Kp[2] = yaw.Kp*0.06
-        self.Ki[2] = yaw.Ki*0.00008
-        self.Kd[2] = yaw.Kd
+    def set_roll_pid(self,roll):
+        self.Kp[1] = roll.Kp*0.06
+        self.Ki[1] = roll.Ki*0.00008
+        self.Kd[1] = roll.Kd
 
 
 
@@ -199,26 +182,15 @@ class Edrone():
         #algorithm for movement od Drone
         #variables are assigned as their name suggest their use
 
-        
+
         if(self.following_wall == 0 and self.picked==0 and self.moving_vertically==0):
             #move towards Box if box is not picked up
             self.setpoint_position = [78,11,25]
-            self.start_point = [102,17.7,22.16]
-            self.distance = (math.sqrt((self.setpoint_position[0]-self.start_point[0])*(self.setpoint_position[0]-self.start_point[0]) + (self.setpoint_position[1]-self.start_point[1])*(self.setpoint_position[1]-self.start_point[1])))
-            self.no_of_waypoints = int(self.distance/10 + 2)
-            self.lat_way_array = np.linspace(self.start_point[0],self.setpoint_position[0],self.no_of_waypoints)
-            self.long_way_array = np.linspace(self.start_point[1],self.setpoint_position[1],self.no_of_waypoints)
-            self.setpoint_position = [self.lat_way_array[self.way_count],self.long_way_array[self.way_count],25]
-            if(abs(self.current_position[0]-self.lat_way_array[self.way_count]<2) and self.way_count<self.no_of_waypoints-1):
-                self.way_count = self.way_count  + 1
-                self.setpoint_position = [self.lat_way_array[self.way_count],self.long_way_array[self.way_count],25]
-                         
-        
-
+            
         if(self.picked==1 and self.following_wall==0 and self.obstacle_left==float('inf') and self.check==0):
             self.a = self.current_position[0]
             self.b = self.current_position[1]
-            self.multiplier = 8
+            self.multiplier = 10
 
             #after succesfully avoiding the obstacle seetup new initial position
             self.new_initial_setpoint[0] = self.a
@@ -239,9 +211,10 @@ class Edrone():
             
 
             #Dynamic Kp and Kd for Box picked up
-            
-            self.Kp[2] = 15
-            
+            self.Kp[0] = 12
+            self.Kp[1] = 12
+            self.Kp[2] = 7
+            self.Kd[2] = 500
             
             self.initial_setpoint_position = [78,11,25]
             
@@ -260,7 +233,7 @@ class Edrone():
             #Below is algorithm for dynamically change the setpoint while crusing 
             self.setpoint_position = [self.prev_setpoint[0]+self.count*self.multiplier*self.latitude_single_meter,self.prev_setpoint[1]+self.count*self.multiplier*self.longitude_single_meter,25]
             self.next_setpoint = [self.setpoint_position[0]+self.multiplier*self.latitude_single_meter,self.setpoint_position[1]+self.multiplier*self.longitude_single_meter,25]
-            if(self.current_position[0]-self.setpoint_position[0]<2.5):
+            if(self.current_position[0]-self.setpoint_position[0]<2):
                 self.setpoint_position = self.next_setpoint
                 self.count=self.count+1
             if(self.current_position[1]-self.final_setpoint_position[1]<2):
@@ -276,18 +249,16 @@ class Edrone():
 
             self.setpoint_position[2] = self.final_setpoint_position[2]
                 
-                   
+
+                
+                    
         
 
         #This code is to be executed when about to pick up the box        
         if(self.following_wall==0 and self.picked==0):
             
-            
-            if(self.current_position[0]<78.1 and self.current_position[0]>77.9 and self.current_position[1]<11.1 and self.current_position[1]>10.9):
-                
-                self.Kp[2]=25
-                self.setpoint_position[2]=22.13
-                      
+            if(self.current_position[0]<78.3 and self.current_position[0]>77.3 and self.current_position[1]<11.3 and self.current_position[1]>10.7):
+                self.setpoint_position[2]=22.1599967919
                 self.moving_vertically=1
         print self.obstacle_left
         
@@ -299,16 +270,17 @@ class Edrone():
             self.setpoint_position[0]= 8 + self.current_position[0] - self.obstacle_left
             self.following_wall==1
 
-        if(self.obstacle_left==float('inf') and self.following_wall==1):          
+        if(self.obstacle_left==float('inf') and self.following_wall==1):
+            
             self.following_wall=0
 
         
 
         # Laser was giving bit wrong values so I rely upon only one laser
         
-        '''
 
-               
+
+            '''    
             if(self.obstacle_left== float('inf') and self.following_wall==1 and self.moving_forward==0):
                 
                 self.moving_left = 0
@@ -328,37 +300,19 @@ class Edrone():
                 self.moving_right = 1
                 self.setpoint_position[0] = self.current_position[0] - 2
                 self.setpoint_position[1] = -2 + self.current_position[1]       
-                
-        
+            '''    
+
             
 
-        if(self.setpoint_position[0]==0 and self.setpoint_position[1]==0 and self.setpoint_position[2]==0):
-            rospy.sleep(1)
-            self.setpoint_position[2] = 3.0
-        
-        
-        # set setpoint of latitude to 19.0000451704       
-        if(self.checkpoint_1==0 and self.current_position[2]>3.99):
-            rospy.sleep(1)
-            self.setpoint_position = [5,0,3.0]   
-            self.checkpoint_1 =1
+       
 
-        
-        # set setpoint of altitude to 0.31    
-        if(self.checkpoint_2==0 and self.current_position[0]>4.9):
-            rospy.sleep(1)
-            self.setpoint_position = [5,0,0.31]
-            self.checkpoint_2=1
-        '''
 
 
         print self.setpoint_position
         self.lat_error_pub.publish(self.error[0])
-        self.long_error_pub.publish(self.error[1])
-        self.alt_error_pub.publish(self.error[2])
 
         
-        
+       
         self.error[0] = (self.setpoint_position[0] - self.current_position[0])
         self.error[1] = (self.setpoint_position[1] - self.current_position[1])
         self.error[2] = (self.setpoint_position[2] - self.current_position[2])

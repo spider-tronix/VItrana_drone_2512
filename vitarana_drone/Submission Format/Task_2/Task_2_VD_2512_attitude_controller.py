@@ -93,11 +93,6 @@ class Edrone():
 
         # Publishing /edrone/pwm
         self.pwm_pub = rospy.Publisher('/edrone/pwm', prop_speed, queue_size=1)
-        self.roll_pub = rospy.Publisher('/roll_error', Float32, queue_size=1 )
-        self.pitch_pub = rospy.Publisher('/pitch_error' ,Float32,queue_size=1 )
-        self.yaw_pub = rospy.Publisher('/yaw_error', Float32,queue_size=1 )
-        
-
         
         # -----------------------------------------------------------------------------------------------------------
 
@@ -189,30 +184,30 @@ class Edrone():
         self.drone_orientation_euler_deg[0] = ( self.drone_orientation_euler[1]/PI )*180
         self.drone_orientation_euler_deg[2] = ( self.drone_orientation_euler[2]/PI )*180
         
-        
+
         # Computing error(for proportional) in each axis
         self.error[0] = self.setpoint_euler[0] - self.drone_orientation_euler_deg[0]
         self.error[1] = self.setpoint_euler[1] - self.drone_orientation_euler_deg[1]
         self.error[2] = self.setpoint_euler[2] - self.drone_orientation_euler_deg[2]
 
-        if(self.error[0] > 4):
-            self.error[0] = 4
+        if(self.error[0] > 0.7):
+            self.error[0] = 0.7
 
-        if(self.error[1] > 4):
-            self.error[1] = 4
+        if(self.error[1] > 0.7):
+            self.error[1] = 0.7
 
-        if(self.error[2] > 4):
-            self.error[2] = 4
+        if(self.error[2] > 0.7):
+            self.error[2] = 0.7
 
 
-        if(self.error[0] < -4):
-            self.error[0] = -4
+        if(self.error[0] < -0.7):
+            self.error[0] = -0.7
 
-        if(self.error[1] < -4):
-            self.error[1] = -4
+        if(self.error[1] < -0.7):
+            self.error[1] = -0.7
 
-        if(self.error[2] < -4):
-            self.error[2] = -4
+        if(self.error[2] < -0.7):
+            self.error[2] = -0.7
 
         
 
@@ -230,9 +225,6 @@ class Edrone():
         self.errorI[1] = self.errorI[1] + self.error[1]
         self.errorI[2] = self.errorI[2] + self.error[2]
         
-        self.roll_pub.publish(self.error[0])
-        self.pitch_pub.publish(self.error[1])
-        self.yaw_pub.publish(self.error[2])
         
         # Calculate the pid output required for each axis and throttle
         self.out_roll = self.Kp[0]*self.error[0] + self.Kd[0]*self.errorD[0] + self.Ki[0]*self.errorI[0]
