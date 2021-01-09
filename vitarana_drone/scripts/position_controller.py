@@ -6,6 +6,7 @@ from vitarana_drone.msg import *
 from pid_tune.msg import PidTune
 from sensor_msgs.msg import NavSatFix
 from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import Range
 from std_msgs.msg import Float32
 from std_msgs.msg import String
 import rospy
@@ -68,6 +69,9 @@ class Edrone():
         self.long_error_pub = rospy.Publisher('/long_error',Float32,queue_size = 1)
         self.alt_error_pub = rospy.Publisher('/alt_error',Float32,queue_size = 1)
 
+        self.change_min = rospy.Publisher('/edrone/range_finder_top',LaserScan,queue_size=10)
+        self.LaserScan_reading = LaserScan()
+
 
         self.following_wall =0
         self.moving_forward =0
@@ -119,10 +123,23 @@ class Edrone():
 
 
     def range_finder_top_callback(self,msg):
+
+        # range_min_new = 0
+
+        # print "msg value " , msg.ranges[0]
+
+        # if(msg.ranges[0] < 0.3):
+        #     range_min_new = 0.3
+
         self.obstacle_front = msg.ranges[0]
+        # self.obstacle_front = range_min_new
         self.obstacle_right = msg.ranges[1]
         self.obstacle_back = msg.ranges[2]
         self.obstacle_left = msg.ranges[3]
+
+        # print "After setting ", self.obstacle_front
+            
+        
 
     def range_finder_bottom_callback(self,msg):
         self.obstacle_bottom = msg.ranges[0]
@@ -199,7 +216,11 @@ class Edrone():
         #algorithm for movement od Drone
         #variables are assigned as their name suggest their use
 
-        
+        # self.LaserScan_reading.range_min = 1
+        # self.change_min.publish(self.LaserScan_reading)
+
+
+
         if(self.following_wall == 0 and self.picked==0 and self.moving_vertically==0):
             #move towards Box if box is not picked up
             self.setpoint_position = [78,11,25]
@@ -352,7 +373,7 @@ class Edrone():
         '''
 
 
-        print self.setpoint_position
+        
         self.lat_error_pub.publish(self.error[0])
         self.long_error_pub.publish(self.error[1])
         self.alt_error_pub.publish(self.error[2])

@@ -226,7 +226,7 @@ class Edrone():
                 self.prev_setpoint = self.new_initial_setpoint
                 print "Hello"
 
-            #Below two variables is basically cos(theta) and sin(theta) for the line in which they are moving
+            #Below two variables is basically cos(theta) self.current_position[0]-self.setpoint_position[0]and sin(theta) for the line in which they are moving
             self.latitude_single_meter = (self.final_setpoint_position[0]-self.prev_setpoint[0])/math.sqrt((self.final_setpoint_position[0]-self.prev_setpoint[0])*(self.final_setpoint_position[0]-self.prev_setpoint[0]) + (self.final_setpoint_position[1]-self.prev_setpoint[1])*(self.final_setpoint_position[1]-self.prev_setpoint[1]))
             self.longitude_single_meter = (self.final_setpoint_position[0]-self.prev_setpoint[1])/math.sqrt((self.final_setpoint_position[0]-self.prev_setpoint[0])*(self.final_setpoint_position[0]-self.prev_setpoint[0]) + (self.final_setpoint_position[1]-self.prev_setpoint[1])*(self.final_setpoint_position[1]-self.prev_setpoint[1]))
             

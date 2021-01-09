@@ -31,31 +31,19 @@ class image_proc():
 		self.img = np.empty([]) # This will contain your image frame from camera
 		self.bridge = CvBridge()
 		
-		self.z_m =0 
-		self.build_num=0
-		rospy.Subscriber('/z_m' , Float64 , self.z_callback)
-		rospy.Subscriber('/build_num' , Int8 , self.build_num_callback)
-		rospy.Subscriber('check_4',Int8 , self.check_callback)
+		self.check =0
 
-
+		rospy.Subscriber('/detect_now',Int8,self.check_callback)
 		self.X_pub = rospy.Publisher('/x_marker', Float64 , queue_size=1)
 		self.Y_pub = rospy.Publisher('/y_marker', Float64 , queue_size=1)
 
-
 	def check_callback(self,msg):
-		self.check = msg.data
-
-	def z_callback(self,msg):
-		self.z_m = msg.data
-
-	def build_num_callback(self,msg):
-		self.build_num = msg.data
+		self.check=msg.data
 
 	def image_callback(self, data):
 		
 		try:
-			if(self.z_m!=0):
-				
+			if(self.check==1):	
 				self.img = self.bridge.imgmsg_to_cv2(data, "bgr8") # Converting the image to OpenCV standard image
 				self.image1 = cv.imread('/home/vivekubuntu/eyrc_task0/src/vitarana_drone/scripts/test_1.png')
 				
@@ -88,7 +76,7 @@ class image_proc():
 
 if __name__ == '__main__':
 	image_proc_obj = image_proc()
-	r = rospy.Rate(100) 
+	r = rospy.Rate(32) 
 	while not rospy.is_shutdown():      
 		try:
 		 image_proc_obj.detect()      
